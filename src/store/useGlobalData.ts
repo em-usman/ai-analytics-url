@@ -66,8 +66,15 @@ export const useGlobalData = create<GlobalState>((set, get) => ({
       const stored = localStorage.getItem("user");
       const token = localStorage.getItem("authToken");
 
-      if (stored) {
-        const userObj = JSON.parse(stored) as Record<string, any>;
+      if (stored && stored !== "undefined" && stored !== "null") {
+        let userObj: Record<string, any>;
+        try {
+          userObj = JSON.parse(stored) as Record<string, any>;
+        } catch (e) {
+          console.warn("Failed to parse stored user, clearing key", e);
+          localStorage.removeItem("user");
+          userObj = {} as Record<string, any>;
+        }
         const uid = userObj.uid || userObj.id || userObj.userId || null;
 
         // set a local user immediately; listener will update when profile arrives

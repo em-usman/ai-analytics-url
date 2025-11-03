@@ -8,6 +8,9 @@ import type {
   User as UserProfile,
 } from "../types"; // Import your types
 
+// Ensure ImportMetaEnv is available for Vite
+/// <reference types="vite/client" />
+
 // import { auth, db } from "../firebase/firebaseConfig";
 // import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 // import { doc, onSnapshot } from "firebase/firestore";

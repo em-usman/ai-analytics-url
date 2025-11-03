@@ -1,0 +1,35 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --bg-primary: #111827;
+  --bg-secondary: #1F2937;
+  --text-primary: #ffffff;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #E5E7EB;
+  --border-color: #374151;
+  --input-bg: #374151;
+  --input-border: #4B5563;
+  --accent-hover: #374151;
+  --accent-active: #2563EB;
+  --priority-high: #dc2626;
+  --priority-medium: #f59e0b;
+  --priority-low: #10b981;
+}
+
+/* Style dropdown options */
+select option {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 8px 12px;
+}
+
+/* Optional: style hover/focus */
+select option:hover,
+select option:focus {
+  background-color: var(--accent-hover);
+  color: white;
+}

@@ -132,7 +132,7 @@ export function SigninForm() {
             )}
           </GradientButton>
         </form>
-        {/* <p className="mt-4 text-sm text-center text-gray-600">
+        <p className="mt-4 text-sm text-center text-gray-600">
           Don't have an account. Please{" "}
           <span
             onClick={() => navigate("/signup")}
@@ -140,7 +140,7 @@ export function SigninForm() {
           >
             Sign Up
           </span>
-        </p> */}
+        </p>
       </div>
       {/* Image Container - Hidden on small screens, covers the rest on md+ */}
       <div className="hidden md:flex flex-1 items-center justify-center p-8 max-h-screen bg-gray-900">

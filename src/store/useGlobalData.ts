@@ -1,6 +1,5 @@
 // src/store/useGlobalStore.ts
 import { create } from "zustand";
-import { getAuth, onAuthStateChanged, type Unsubscribe } from "firebase/auth";
 
 // ✅ Only import READ services (no create/update/delete)
 import {
@@ -32,15 +31,15 @@ interface GlobalState {
   isLoaded: boolean;
   error: string | null;
 
-  profileListenerUnsubscribe: Unsubscribe | null;
-  authUnsubscribe: Unsubscribe | null;
+  profileListenerUnsubscribe: (() => void) | null;
+  authUnsubscribe: (() => void) | null;
 
   // --- Actions ---
-  initAuthListener: () => void;
+  initAuthListener: () => Promise<void>;
   reset: () => void;
   addCustomer: (customer: Customer) => void;
   updateCustomerInStore: (updatedCustomer: Customer) => void;
-  removeCustomer: (customerId: string) => void; 
+  removeCustomer: (customerId: string) => void;
   addPrompt: (prompt: Prompt) => void;
   updatePromptInStore: (updatedPrompt: Prompt) => void;
 }
@@ -58,78 +57,59 @@ export const useGlobalData = create<GlobalState>((set, get) => ({
   profileListenerUnsubscribe: null,
   authUnsubscribe: null,
 
-  initAuthListener: () => {
-    const currentAuthUnsub = get().authUnsubscribe;
-    if (currentAuthUnsub) {
-      currentAuthUnsub();
-    }
+  initAuthListener: async () => {
+    // idempotent: don't run if already loaded or loading
+    if (get().isLoaded || get().isLoading) return;
+    set({ isLoading: true, error: null });
 
-    const auth = getAuth();
-    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        const profileUnsub = get().profileListenerUnsubscribe;
-        if (profileUnsub) {
-          profileUnsub();
+    try {
+      const stored = localStorage.getItem("user");
+      const token = localStorage.getItem("authToken");
+
+      if (stored) {
+        const userObj = JSON.parse(stored) as Record<string, any>;
+        const uid = userObj.uid || userObj.id || userObj.userId || null;
+
+        // set a local user immediately; listener will update when profile arrives
+        if (!uid) {
+          set({ userProfile: userObj as UserProfile });
+        } else {
+          const prev = get().profileListenerUnsubscribe;
+          if (prev) prev();
+          const unsub = listenToUserProfile(uid, (profile) => {
+            set({ userProfile: profile ?? (userObj as UserProfile) });
+          });
+          set({ profileListenerUnsubscribe: unsub });
         }
+      }
 
-        set({
-          userProfile: null,
-          customers: [],
-          prompts: [],
-          dashboardStats: null,
-          recentActivity: [],
-          isLoading: false,
-          isLoaded: false,
-          error: null,
-          profileListenerUnsubscribe: null,
-          authUnsubscribe: get().authUnsubscribe,
-        });
+      // if there's no token we cannot call protected endpoints
+      if (!token) {
+        set({ isLoading: false });
         return;
       }
 
-      const uid = user.uid;
-      const prevProfileUnsub = get().profileListenerUnsubscribe;
-      if (prevProfileUnsub) {
-        prevProfileUnsub();
-      }
+      // fetch app data once on first mount
+      const [customersData, promptsData, summaryData, activityData] =
+        await Promise.all([
+          fetchCustomers(),
+          fetchPrompts(),
+          fetchDashboardSummary(),
+          fetchRecentActivity(100),
+        ]);
 
-      const profileUnsub = listenToUserProfile(uid, (profile) => {
-        set({ userProfile: profile });
+      set({
+        customers: customersData,
+        prompts: promptsData,
+        dashboardStats: summaryData,
+        recentActivity: activityData,
+        isLoaded: true,
+        isLoading: false,
       });
-      set({ profileListenerUnsubscribe: profileUnsub });
-
-      if (!get().isLoaded) {
-        set({ isLoading: true, error: null });
-        try {
-          const [customersData, promptsData, summaryData, activityData] =
-            await Promise.all([
-              fetchCustomers(),
-              fetchPrompts(),
-              fetchDashboardSummary(),
-              fetchRecentActivity(100),
-            ]);
-
-          set({
-            customers: customersData,
-            prompts: promptsData,
-            dashboardStats: summaryData,
-            recentActivity: activityData,
-            isLoaded: true,
-            isLoading: false,
-          });
-        } catch (err: any) {
-          console.error("Global data fetch failed:", err);
-          set({
-            isLoading: false,
-            error: "Failed to load application data.",
-          });
-        }
-      } else {
-        set({ isLoading: false });
-      }
-    });
-
-    set({ authUnsubscribe });
+    } catch (err: any) {
+      console.error("Global data fetch failed:", err);
+      set({ isLoading: false, error: "Failed to load application data." });
+    }
   },
 
   reset: () => {

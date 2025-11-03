@@ -40,10 +40,6 @@ const PromptList: React.FC<PromptListProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-secondary)] text-[var(--text-primary)]">
-      <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-color)]">
-        <h2 className="text-lg font-semibold pt-1">Prompt Library</h2>
-      </div>
-
       <div className="px-2 py-2">
         <input
           type="text"

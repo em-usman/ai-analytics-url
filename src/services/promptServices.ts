@@ -49,3 +49,26 @@ export const updatePrompt = async (
   // Returns the full updated prompt object from your controller
   return response.data;
 };
+
+/**
+ * Create a new prompt via POST /prompts
+ */
+export const createPrompt = async (payload: {
+  name: string;
+  description?: string;
+  system_prompt: string;
+  user_prompt: string;
+}): Promise<Prompt> => {
+  const headers = await getAuthHeaders();
+  const response = await axios.post(`${API_URL}/prompts`, payload, headers);
+  return response.data;
+};
+
+/**
+ * Delete a prompt via DELETE /prompts/:id
+ */
+export const deletePrompt = async (promptId: string): Promise<{ success: boolean }> => {
+  const headers = await getAuthHeaders();
+  const response = await axios.delete(`${API_URL}/prompts/${promptId}`, headers);
+  return response.data;
+};

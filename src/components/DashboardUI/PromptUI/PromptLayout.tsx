@@ -51,6 +51,55 @@ const AppLayout: React.FC = () => {
     }
   };
 
+  // Create new prompt flow (simple dialog-based MVP)
+  const handleCreatePrompt = async () => {
+    try {
+      const name = window.prompt("New prompt name:", "New Prompt");
+      if (!name) return;
+
+      const description = window.prompt("Short description (optional):", "");
+
+      // Basic default template values for new prompt
+      const payload = {
+        name,
+        description: description || "",
+        system_prompt: "You are a helpful assistant.",
+        user_prompt: "Please analyze the following...",
+      };
+
+      // Import service lazily to keep bundle optimized
+      const mod = await import("../../../services/promptServices");
+      const created = await mod.createPrompt(payload);
+
+      // Update store and select newly created prompt
+      useGlobalData.getState().addPrompt(created);
+      setSelectedPromptId(created.id);
+
+      setToast({ message: "Prompt created", type: "success" });
+    } catch (err) {
+      console.error("Create prompt failed:", err);
+      setToast({ message: "Failed to create prompt.", type: "error" });
+    }
+  };
+
+  const handleDeletePrompt = async (promptId: string) => {
+    try {
+      const mod = await import("../../../services/promptServices");
+      await mod.deletePrompt(promptId);
+
+      // Remove from store and clear selection
+      useGlobalData.getState().removePrompt(promptId);
+      setSelectedPromptId(null);
+
+      setToast({ message: "Prompt deleted", type: "success" });
+      return true;
+    } catch (err) {
+      console.error("Delete prompt error:", err);
+      setToast({ message: "Failed to delete prompt.", type: "error" });
+      return false;
+    }
+  };
+
   const selectedPrompt = prompts.find((p) => p.id === selectedPromptId);
 
   return (
@@ -69,6 +118,15 @@ const AppLayout: React.FC = () => {
       {/* Desktop */}
       <div className="hidden lg:flex h-full w-full">
         <div className="w-80 flex-shrink-0 h-full border-r border-[var(--border-color)]">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-color)]">
+            <h2 className="text-lg font-semibold pt-1">Prompt Library</h2>
+            <button
+              onClick={handleCreatePrompt}
+              className="text-sm px-2 py-1 rounded bg-[var(--accent)] text-[var(--accent-active)] hover:bg-[var(--accent-hover)]"
+            >
+              + New
+            </button>
+          </div>
           <PromptList
             prompts={prompts}
             selectedPromptId={selectedPromptId}
@@ -83,6 +141,7 @@ const AppLayout: React.FC = () => {
               key={selectedPrompt.id}
               prompt={selectedPrompt}
               onSavePrompt={handleSavePrompt}
+              onDeletePrompt={handleDeletePrompt}
             />
           ) : (
             <WelcomePlaceholder />

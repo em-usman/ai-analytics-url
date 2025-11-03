@@ -42,6 +42,7 @@ interface GlobalState {
   removeCustomer: (customerId: string) => void;
   addPrompt: (prompt: Prompt) => void;
   updatePromptInStore: (updatedPrompt: Prompt) => void;
+  removePrompt: (promptId: string) => void;
 }
 
 // --- STORE CREATION ---
@@ -177,6 +178,13 @@ export const useGlobalData = create<GlobalState>((set, get) => ({
   addPrompt: (prompt) => {
     set((state) => ({
       prompts: [...state.prompts, prompt],
+    }));
+  },
+
+  // ✅ Remove a prompt by ID
+  removePrompt: (promptId: string) => {
+    set((state) => ({
+      prompts: state.prompts.filter((p) => p.id !== promptId),
     }));
   },
 

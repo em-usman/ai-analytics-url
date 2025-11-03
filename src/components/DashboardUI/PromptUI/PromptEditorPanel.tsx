@@ -6,11 +6,13 @@ import Spinner from "../../ui/spinner";
 interface PromptEditorPanelProps {
   prompt: Prompt;
   onSavePrompt: (promptId: string, data: PromptUpdateData) => Promise<boolean>; // Make it return a promise
+  onDeletePrompt?: (promptId: string) => Promise<boolean>;
 }
 
 const PromptEditorPanel: React.FC<PromptEditorPanelProps> = ({
   prompt,
   onSavePrompt,
+  onDeletePrompt,
 }) => {
   // Local state for the text areas
   const [systemPrompt, setSystemPrompt] = useState(prompt.system_prompt);
@@ -20,6 +22,7 @@ const PromptEditorPanel: React.FC<PromptEditorPanelProps> = ({
   const [isDirty, setIsDirty] = useState(false);
   // State to show loading spinner on save
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Effect to update local state if the selected prompt (prop) changes
   useEffect(() => {
@@ -58,29 +61,54 @@ const PromptEditorPanel: React.FC<PromptEditorPanelProps> = ({
       {/* Header Section - Fixed */}
       <div className="flex-shrink-0 flex justify-between items-center px-4 py-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
         <h2 className="text-xl font-bold truncate">Prompts: {prompt.name}</h2>
-        <button
-          onClick={handleSave}
-          disabled={!isDirty || isSaving}
-          className="flex-shrink-0 px-3 py-1 rounded text-xl flex items-center gap-1
-             bg-[var(--accent)] text-[var(--accent-active)]
-             hover:bg-[var(--accent-hover)]
-             disabled:bg-[var(--border-color)] disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isSaving ? (
-            <>
-              <Spinner
-                size="sm"
-                className="border-[var(--accent-active)] border-t-transparent"
-              />
-              Saving...
-            </>
-          ) : (
-            <>
-              <FaSave className="h-5 w-5" />
-              Save
-            </>
+        <div className="flex items-center gap-2">
+          {onDeletePrompt && (
+            <button
+              onClick={async () => {
+                const ok = window.confirm(
+                  `Delete prompt "${prompt.name}"? This cannot be undone.`
+                );
+                if (!ok) return;
+                setIsDeleting(true);
+                try {
+                  const success = await onDeletePrompt(prompt.id);
+                  if (!success) throw new Error("delete failed");
+                } catch (e) {
+                  console.error("Delete failed", e);
+                }
+                setIsDeleting(false);
+              }}
+              className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-70"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
           )}
-        </button>
+
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || isSaving}
+            className="flex-shrink-0 px-3 py-1 rounded text-xl flex items-center gap-1
+               bg-[var(--accent)] text-[var(--accent-active)]
+               hover:bg-[var(--accent-hover)]
+               disabled:bg-[var(--border-color)] disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isSaving ? (
+              <>
+                <Spinner
+                  size="sm"
+                  className="border-[var(--accent-active)] border-t-transparent"
+                />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FaSave className="h-5 w-5" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Scrollable Content Area */}

@@ -26,7 +26,8 @@ import getInitials from "../ui/getInitials";
 
 export function SidebarDemo() {
   const navigate = useNavigate();
-  const [name, setName] = useState("User");
+  // Start with empty name and loading = true to avoid showing a dummy name
+  const [name, setName] = useState("");
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [toast, setToast] = useState<null | { message: string; type: "success" | "error" }>(null);
@@ -173,11 +174,11 @@ export function SidebarDemo() {
             ) : (
               <SidebarLink
                 link={{
-                  label: name,
+                  label: name || "User",
                   href: "#",
                   icon: (
                     <div className="flex items-center justify-center h-10 w-10 rounded-full bg-[var(--bg-secondary)] text-white text-lg font-medium">
-                      {getInitials(name)}
+                      {getInitials(name || "User")}
                     </div>
                   ),
                 }}

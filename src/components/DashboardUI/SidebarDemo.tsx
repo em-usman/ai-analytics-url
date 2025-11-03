@@ -20,7 +20,8 @@ import box from "../../assets/AH_logo.webp";
 import HomeFirst from "./Home/HomeFirst";
 // import { signOutUser, fetchUserName } from "../../services/authServices";
 // do not use firebase client SDK here; read logged-in user from localStorage
-import { signOutUser, listenToUserProfile } from "../../services/authServices";
+import { signOutUser } from "../../services/authServices";
+import { useGlobalData } from "../../store/useGlobalData";
 import Spinner from "../ui/spinner";
 import getInitials from "../ui/getInitials";
 
@@ -30,42 +31,28 @@ export function SidebarDemo() {
   const [name, setName] = useState("");
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
-  const [toast, setToast] = useState<null | { message: string; type: "success" | "error" }>(null);
+  const [toast, setToast] = useState<null | {
+    message: string;
+    type: "success" | "error";
+  }>(null);
+
+  // Use global store as source of truth for profile (backend-provided)
+  const userProfile = useGlobalData((s: any) => s.userProfile);
+  const globalLoading = useGlobalData((s: any) => s.isLoading);
 
   useEffect(() => {
-    let profileUnsubscribe: (() => void) | null = null;
+    setIsProfileLoading(globalLoading);
+  }, [globalLoading]);
 
-    try {
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        const userObj = JSON.parse(stored) as Record<string, any>;
-        const uid = userObj.uid || userObj.id || userObj.userId;
-        setIsProfileLoading(true);
-
-        if (uid) {
-          profileUnsubscribe = listenToUserProfile(uid, (profile) => {
-            if (profile?.name) setName(profile.name);
-            else setName(userObj.name || "User");
-            setIsProfileLoading(false);
-          });
-        } else {
-          setName(userObj.name || "User");
-          setIsProfileLoading(false);
-        }
-      } else {
-        setName("User");
-        setIsProfileLoading(false);
-      }
-    } catch (err) {
-      console.error("Error reading stored user:", err);
-      setName("User");
+  useEffect(() => {
+    if (userProfile && userProfile.name) {
+      setName(userProfile.name);
       setIsProfileLoading(false);
+    } else if (userProfile && !userProfile.name) {
+      // server returned a user object without name — keep loading until listener updates
+      setIsProfileLoading(true);
     }
-
-    return () => {
-      profileUnsubscribe?.();
-    };
-  }, []);
+  }, [userProfile]);
 
   const links = [
     {

@@ -132,6 +132,23 @@ export const listenToUserProfile = (
   };
 };
 
+// Fetch current user profile from backend using the stored auth token.
+export const fetchCurrentUser = async (): Promise<UserProfile | null> => {
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) return null;
+
+    const resp = await axios.get<UserProfile>(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return resp.data as UserProfile;
+  } catch (err) {
+    console.warn("fetchCurrentUser failed:", err);
+    return null;
+  }
+};
+
 export const signOutUser = async () => {
   try {
     const token = localStorage.getItem("authToken");

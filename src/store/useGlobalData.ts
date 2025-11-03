@@ -8,7 +8,7 @@ import {
   fetchRecentActivity,
 } from "../services/dashboardServices";
 import { fetchPrompts } from "../services/promptServices";
-import { listenToUserProfile } from "../services/authServices";
+import { listenToUserProfile, fetchCurrentUser } from "../services/authServices";
 
 // ✅ Types only
 import {
@@ -63,37 +63,43 @@ export const useGlobalData = create<GlobalState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const stored = localStorage.getItem("user");
+      // Prefer authoritative profile from backend (protected endpoint) instead of localStorage.
       const token = localStorage.getItem("authToken");
 
-      if (stored && stored !== "undefined" && stored !== "null") {
-        let userObj: Record<string, any>;
-        try {
-          userObj = JSON.parse(stored) as Record<string, any>;
-        } catch (e) {
-          console.warn("Failed to parse stored user, clearing key", e);
-          localStorage.removeItem("user");
-          userObj = {} as Record<string, any>;
-        }
-        const uid = userObj.uid || userObj.id || userObj.userId || null;
+      if (!token) {
+        // Not authenticated on client side
+        set({ isLoading: false });
+        return;
+      }
 
-        // set a local user immediately; listener will update when profile arrives
-        if (!uid) {
-          set({ userProfile: userObj as UserProfile });
-        } else {
+      // Fetch current user profile from backend. This ensures we use server-side data,
+      // avoiding stale or incomplete objects stored in localStorage.
+      const serverUser = await fetchCurrentUser();
+      if (serverUser) {
+        set({ userProfile: serverUser });
+
+        // If we have a uid, start the profile polling to pick up server-side changes
+        const uid = (serverUser as any).uid || (serverUser as any).id || null;
+        if (uid) {
           const prev = get().profileListenerUnsubscribe;
           if (prev) prev();
           const unsub = listenToUserProfile(uid, (profile) => {
-            set({ userProfile: profile ?? (userObj as UserProfile) });
+            set({ userProfile: profile ?? serverUser });
           });
           set({ profileListenerUnsubscribe: unsub });
         }
-      }
-
-      // if there's no token we cannot call protected endpoints
-      if (!token) {
-        set({ isLoading: false });
-        return;
+      } else {
+        // fallback: try to use localStorage user if backend didn't return it
+        const stored = localStorage.getItem("user");
+        if (stored && stored !== "undefined" && stored !== "null") {
+          try {
+            const userObj = JSON.parse(stored) as Record<string, any>;
+            set({ userProfile: userObj as UserProfile });
+          } catch (e) {
+            console.warn("Failed to parse stored user, clearing key", e);
+            localStorage.removeItem("user");
+          }
+        }
       }
 
       // fetch app data once on first mount

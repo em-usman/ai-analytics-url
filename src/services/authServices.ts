@@ -30,12 +30,12 @@ export const registerUser = async (data: RegisterData): Promise<AuthResult> => {
       data
     );
 
-    // On success, your backend returns the token and user data
-    const { idToken, user } = response.data;
+  // On success, your backend returns the token and user data
+  const { idToken /*, user */ } = response.data;
 
-    // Save the token and user data to local storage
-    localStorage.setItem("authToken", idToken);
-    localStorage.setItem("user", JSON.stringify(user));
+  // Save only the token to local storage. The authoritative user profile
+  // will be fetched from the backend via GET /auth/me to avoid stale data.
+  localStorage.setItem("authToken", idToken);
 
     // Return a success object to the form
     return { success: true };
@@ -67,11 +67,11 @@ export const loginUser = async (data: LoginData): Promise<AuthResult> => {
       data
     );
 
-    const { idToken, user } = response.data;
+  const { idToken /*, user */ } = response.data;
 
-    // 3. Save your API token and user data
-    localStorage.setItem("authToken", idToken);
-    localStorage.setItem("user", JSON.stringify(user));
+  // Save only the token. The client will call GET /auth/me to fetch
+  // the current profile from the backend and update the global store.
+  localStorage.setItem("authToken", idToken);
 
     return { success: true };
   } catch (error: unknown) {

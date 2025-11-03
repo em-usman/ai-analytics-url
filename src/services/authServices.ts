@@ -101,13 +101,14 @@ export const listenToUserProfile = (
   let prevProfileJson: string | null = null;
   let stopped = false;
 
-  const token = localStorage.getItem("authToken");
-
   const fetchProfile = async () => {
     if (stopped) return;
     try {
-      const resp = await axios.get<UserProfile>(`${API_URL}/users/${uid}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      // ✅ Use /auth/me instead of /users/:uid
+      const resp = await axios.get<UserProfile>(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
       });
       const profile = resp.data;
       const json = JSON.stringify(profile);
@@ -121,9 +122,7 @@ export const listenToUserProfile = (
     }
   };
 
-  // initial fetch
-  fetchProfile();
-
+  fetchProfile(); // initial
   const handle = setInterval(fetchProfile, intervalMs);
 
   return () => {

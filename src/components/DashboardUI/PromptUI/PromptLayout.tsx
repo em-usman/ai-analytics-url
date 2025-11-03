@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from "react";
 import PromptList from "./PromptList";
+import PromptModal from "./PromptModal";
 import PromptEditorPanel from "./PromptEditorPanel";
-import { updatePrompt } from "../../../services/promptServices";
-import type { PromptUpdateData } from "../../../types";
+import type { Prompt, PromptUpdateData } from "../../../types";
 import { useGlobalData } from "../../../store/useGlobalData";
 import { useShallow } from "zustand/shallow";
 
+// --- Helper Components (moved up for clarity)
+const WelcomePlaceholder = () => (
+  <div className="flex flex-col items-center justify-center h-full text-center px-4">
+    <div className="p-8 border-2 border-dashed rounded-lg border-[var(--border-color)]">
+      <h2 className="mt-4 text-2xl font-bold text-[var(--text-primary)]">
+        Welcome to the Prompt Library
+      </h2>
+      <p className="mt-2 text-[var(--text-secondary)]">
+        Select a prompt on the left to read and update.
+      </p>
+    </div>
+  </div>
+);
+
+// --- Main Component
 const AppLayout: React.FC = () => {
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [toast, setToast] = useState<{
@@ -13,7 +28,6 @@ const AppLayout: React.FC = () => {
     type: "success" | "error";
   } | null>(null);
 
-  // Get prompts from global store
   const {
     prompts,
     isLoading,
@@ -36,11 +50,11 @@ const AppLayout: React.FC = () => {
 
   const handleSavePrompt = async (promptId: string, data: PromptUpdateData) => {
     try {
+      const { updatePrompt } = await import("../../../services/promptServices");
       const updatedPrompt = await updatePrompt(promptId, data);
 
-      //Optimistically update via store action
-      const updatePromptInStore = useGlobalData.getState().updatePromptInStore;
-      updatePromptInStore(updatedPrompt);
+      // ✅ Safe: get fresh store state at time of update
+      useGlobalData.getState().updatePromptInStore(updatedPrompt);
 
       setToast({ message: "Prompt saved successfully!", type: "success" });
       return true;
@@ -51,46 +65,41 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  // Create new prompt flow (simple dialog-based MVP)
-  const handleCreatePrompt = async () => {
+  // Modal state for creating prompt
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const handleCreatePrompt = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreatePromptSubmit = async (data: {
+    name: string;
+    description: string;
+    system_prompt: string;
+    user_prompt: string;
+  }) => {
     try {
-      const name = window.prompt("New prompt name:", "New Prompt");
-      if (!name) return;
-
-      const description = window.prompt("Short description (optional):", "");
-
-      // Basic default template values for new prompt
-      const payload = {
-        name,
-        description: description || "",
-        system_prompt: "You are a helpful assistant.",
-        user_prompt: "Please analyze the following...",
-      };
-
-      // Import service lazily to keep bundle optimized
-      const mod = await import("../../../services/promptServices");
-      const created = await mod.createPrompt(payload);
-
-      // Update store and select newly created prompt
+      const { createPrompt } = await import("../../../services/promptServices");
+      const created = await createPrompt(data);
       useGlobalData.getState().addPrompt(created);
       setSelectedPromptId(created.id);
-
       setToast({ message: "Prompt created", type: "success" });
+      setIsCreateModalOpen(false);
+      return true;
     } catch (err) {
       console.error("Create prompt failed:", err);
       setToast({ message: "Failed to create prompt.", type: "error" });
+      return false;
     }
   };
 
-  const handleDeletePrompt = async (promptId: string) => {
+  const handleDeletePrompt = async (promptToDelete: Prompt) => {
     try {
-      const mod = await import("../../../services/promptServices");
-      await mod.deletePrompt(promptId);
+      const { deletePrompt } = await import("../../../services/promptServices");
+      await deletePrompt(promptToDelete.id);
 
-      // Remove from store and clear selection
-      useGlobalData.getState().removePrompt(promptId);
+      useGlobalData.getState().removePrompt(promptToDelete.id);
       setSelectedPromptId(null);
-
       setToast({ message: "Prompt deleted", type: "success" });
       return true;
     } catch (err) {
@@ -101,6 +110,12 @@ const AppLayout: React.FC = () => {
   };
 
   const selectedPrompt = prompts.find((p) => p.id === selectedPromptId);
+
+  // ✅ Edit handler (opens editor — already selected, so no-op or focus)
+  const handleEditPrompt = (prompt: Prompt) => {
+    setSelectedPromptId(prompt.id);
+    // Optional: scroll to editor or focus a field
+  };
 
   return (
     <div className="flex h-full w-full bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden">
@@ -115,7 +130,7 @@ const AppLayout: React.FC = () => {
         </div>
       )}
 
-      {/* Desktop */}
+      {/* Desktop: two panels */}
       <div className="hidden lg:flex h-full w-full">
         <div className="w-80 flex-shrink-0 h-full border-r border-[var(--border-color)]">
           <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-color)]">
@@ -131,6 +146,8 @@ const AppLayout: React.FC = () => {
             prompts={prompts}
             selectedPromptId={selectedPromptId}
             onSelectPrompt={setSelectedPromptId}
+            onEditPrompt={handleEditPrompt}
+            onDeletePrompt={handleDeletePrompt}
             error={fetchError}
             loading={isLoading}
           />
@@ -141,62 +158,65 @@ const AppLayout: React.FC = () => {
               key={selectedPrompt.id}
               prompt={selectedPrompt}
               onSavePrompt={handleSavePrompt}
-              onDeletePrompt={handleDeletePrompt}
+              onDeletePrompt={() => handleDeletePrompt(selectedPrompt)}
             />
           ) : (
             <WelcomePlaceholder />
           )}
         </div>
+        {/* Create Prompt Modal */}
+        <PromptModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          mode="create"
+          onSubmit={handleCreatePromptSubmit}
+        />
       </div>
 
-      {/* Tablet */}
-      <div className="hidden md:flex lg:hidden h-full w-full flex-col">
+      {/* Mobile/Tablet: single panel, switch view */}
+      <div className="flex flex-col h-full w-full lg:hidden">
         {!selectedPrompt ? (
-          <PromptList
-            prompts={prompts}
-            selectedPromptId={selectedPromptId}
-            onSelectPrompt={setSelectedPromptId}
-            error={fetchError}
-            loading={isLoading}
-          />
-        ) : (
-          <div className="flex flex-col h-full w-full">
-            <PanelHeader
-              title={selectedPrompt.name}
-              onBack={() => setSelectedPromptId(null)}
-              backText="Back to Prompts"
-            />
-            <div className="flex-grow min-h-0 overflow-auto">
-              <PromptEditorPanel
-                prompt={selectedPrompt}
-                onSavePrompt={handleSavePrompt}
-              />
+          <>
+            <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-color)]">
+              <h2 className="text-lg font-semibold pt-1">Prompt Library</h2>
+              <button
+                onClick={handleCreatePrompt}
+                className="text-sm px-2 py-1 rounded bg-blue-600 text-white "
+              >
+                + New
+              </button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile */}
-      <div className="flex md:hidden h-full w-full flex-col">
-        {!selectedPrompt ? (
-          <PromptList
-            prompts={prompts}
-            selectedPromptId={selectedPromptId}
-            onSelectPrompt={setSelectedPromptId}
-            error={fetchError}
-            loading={isLoading}
-          />
+            <PromptList
+              prompts={prompts}
+              selectedPromptId={selectedPromptId}
+              onSelectPrompt={setSelectedPromptId}
+              onEditPrompt={handleEditPrompt}
+              onDeletePrompt={handleDeletePrompt}
+              error={fetchError}
+              loading={isLoading}
+            />
+            <PromptModal
+              isOpen={isCreateModalOpen}
+              onClose={() => setIsCreateModalOpen(false)}
+              mode="create"
+              onSubmit={handleCreatePromptSubmit}
+            />
+          </>
         ) : (
           <div className="flex flex-col h-full w-full">
-            <PanelHeader
-              title={selectedPrompt.name}
-              onBack={() => setSelectedPromptId(null)}
-              backText="Back to Prompts"
-            />
+            <div className="px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
+              <p
+                className="text-blue-600 text-sm font-medium cursor-pointer hover:underline"
+                onClick={() => setSelectedPromptId(null)}
+              >
+                ← Back to Prompts
+              </p>
+            </div>
             <div className="flex-grow min-h-0 overflow-auto">
               <PromptEditorPanel
                 prompt={selectedPrompt}
                 onSavePrompt={handleSavePrompt}
+                onDeletePrompt={() => handleDeletePrompt(selectedPrompt)}
               />
             </div>
           </div>
@@ -205,31 +225,5 @@ const AppLayout: React.FC = () => {
     </div>
   );
 };
-
-// --- Helper Components
-const WelcomePlaceholder = () => (
-  <div className="flex flex-col items-center justify-center h-full text-center px-4">
-    <div className="p-8 border-2 border-dashed rounded-lg border-[var(--border-color)]">
-      <h2 className="mt-4 text-2xl font-bold text-[var(--text-primary)]">
-        Welcome to the Prompt Library
-      </h2>
-      <p className="mt-2 text-[var(--text-secondary)]">
-        Select a prompt on the left to read and update.
-      </p>
-    </div>
-  </div>
-);
-
-const PanelHeader = ({ onBack, backText }: any) => (
-  <div className="h-12 flex items-center px-4 bg-[var(--bg-primary)] flex-shrink-0">
-    <button
-      className="flex items-center gap-2 text-blue-700 text-lg"
-      onClick={onBack}
-    >
-      <span>←</span>
-      <span>{backText}</span>
-    </button>
-  </div>
-);
 
 export default AppLayout;

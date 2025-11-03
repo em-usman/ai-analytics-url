@@ -13,6 +13,14 @@ import { registerUser } from "../../services/authServices";
 import type { FormData } from "../../types";
 import Spinner from "../ui/spinner";
 
+declare global {
+  interface Window {
+    __ZUSTAND__?: {
+      reset?: () => void;
+    };
+  }
+}
+
 export function SignupForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -82,6 +90,11 @@ export function SignupForm() {
     setLoading(false);
 
     if (result.success) {
+      // Clear any previous user data from localStorage and global state before redirect
+      localStorage.removeItem("user");
+      localStorage.removeItem("authToken");
+      window.localStorage.clear();
+      if (window.__ZUSTAND__) window.__ZUSTAND__.reset?.();
       // On success, clear form and redirect
       setFormData({
         name: "",
@@ -89,7 +102,10 @@ export function SignupForm() {
         password: "",
         confirmPassword: "",
       });
-      navigate("/dashboard"); // Redirect to your app's main page
+      // Force reload global data for new user
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 100);
     } else {
       // Show the error from the backend (e.g., "EMAIL_EXISTS")
       setMessage(result.message || "Error creating account.");

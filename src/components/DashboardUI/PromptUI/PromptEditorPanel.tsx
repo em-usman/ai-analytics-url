@@ -23,6 +23,7 @@ const PromptEditorPanel: React.FC<PromptEditorPanelProps> = ({
   // State to show loading spinner on save
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Effect to update local state if the selected prompt (prop) changes
   useEffect(() => {
@@ -63,26 +64,54 @@ const PromptEditorPanel: React.FC<PromptEditorPanelProps> = ({
         <h2 className="text-xl font-bold truncate">Prompts: {prompt.name}</h2>
         <div className="flex items-center gap-2">
           {onDeletePrompt && (
-            <button
-              onClick={async () => {
-                const ok = window.confirm(
-                  `Delete prompt "${prompt.name}"? This cannot be undone.`
-                );
-                if (!ok) return;
-                setIsDeleting(true);
-                try {
-                  const success = await onDeletePrompt(prompt.id);
-                  if (!success) throw new Error("delete failed");
-                } catch (e) {
-                  console.error("Delete failed", e);
-                }
-                setIsDeleting(false);
-              }}
-              className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-70"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </button>
+            <>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-70"
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+              {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+                  <div className="bg-[var(--bg-secondary)] p-6 rounded-lg shadow-xl w-full max-w-xs border border-[var(--border-color)]">
+                    <h2 className="text-lg font-semibold mb-3 text-[var(--text-primary)]">
+                      Confirm Delete
+                    </h2>
+                    <p className="mb-4 text-[var(--text-secondary)] text-sm">
+                      Are you sure you want to delete the prompt{" "}
+                      <span className="font-bold">{prompt.name}</span>?
+                    </p>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        className="px-4 py-2 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-quaternary)] text-[var(--text-primary)]"
+                        onClick={() => setShowDeleteModal(false)}
+                        disabled={isDeleting}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+                        onClick={async () => {
+                          setIsDeleting(true);
+                          try {
+                            const success = await onDeletePrompt(prompt.id);
+                            if (!success) throw new Error("delete failed");
+                          } catch (e) {
+                            console.error("Delete failed", e);
+                          }
+                          setIsDeleting(false);
+                          setShowDeleteModal(false);
+                        }}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           <button

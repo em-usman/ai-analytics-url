@@ -46,11 +46,22 @@ export function SigninForm() {
 
     setLoading(true);
 
+    // Clear any previous user data from localStorage and global state before login
+    localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
+    window.localStorage.clear();
+    if (window.__ZUSTAND__) window.__ZUSTAND__.reset?.();
+
     const result = await loginUser(formData);
     setLoading(false);
 
     if (result.success) {
-      navigate("/dashboard");
+      // Reset global state to ensure fresh data
+      if (window.__ZUSTAND__) window.__ZUSTAND__.reset?.();
+      // Force reload global data for new user
+      setTimeout(() => {
+        window.location.replace("/dashboard");
+      }, 100);
     } else {
       setMessage(result.message || "Login failed. Please try again.");
     }

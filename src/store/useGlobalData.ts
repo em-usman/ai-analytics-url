@@ -147,6 +147,9 @@ export const useGlobalData = create<GlobalState>((set, get) => ({
   addCustomer: (customer) => {
     set((state) => ({
       customers: [...state.customers, customer],
+      // If we add a customer manually (e.g., after create), mark data as loaded
+      isLoaded: true,
+      isLoading: false,
     }));
   },
 

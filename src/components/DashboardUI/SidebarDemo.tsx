@@ -19,40 +19,49 @@ import box from "../../assets/AH_logo.webp";
 // import HomeFirst from "./Home/HomeFirst";
 import HomeFirst from "./Home/HomeFirst";
 // import { signOutUser, fetchUserName } from "../../services/authServices";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../firebase/firebaseConfig";
+// do not use firebase client SDK here; read logged-in user from localStorage
 import { signOutUser, listenToUserProfile } from "../../services/authServices";
+import Spinner from "../ui/spinner";
 import getInitials from "../ui/getInitials";
 
 export function SidebarDemo() {
   const navigate = useNavigate();
   const [name, setName] = useState("User");
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [toast, setToast] = useState<null | { message: string; type: "success" | "error" }>(null);
 
   useEffect(() => {
     let profileUnsubscribe: (() => void) | null = null;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsProfileLoading(true); // Start loading when user is found
-        if (profileUnsubscribe) profileUnsubscribe();
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const userObj = JSON.parse(stored) as Record<string, any>;
+        const uid = userObj.uid || userObj.id || userObj.userId;
+        setIsProfileLoading(true);
 
-        profileUnsubscribe = listenToUserProfile(user.uid, (profile) => {
-          if (profile?.name) {
-            setName(profile.name);
-          } else {
-            setName("User");
-          }
-          setIsProfileLoading(false); // ✅ Done loading
-        });
+        if (uid) {
+          profileUnsubscribe = listenToUserProfile(uid, (profile) => {
+            if (profile?.name) setName(profile.name);
+            else setName(userObj.name || "User");
+            setIsProfileLoading(false);
+          });
+        } else {
+          setName(userObj.name || "User");
+          setIsProfileLoading(false);
+        }
       } else {
         setName("User");
-        setIsProfileLoading(false); // Not loading if no user
+        setIsProfileLoading(false);
       }
-    });
+    } catch (err) {
+      console.error("Error reading stored user:", err);
+      setName("User");
+      setIsProfileLoading(false);
+    }
 
     return () => {
-      unsubscribe();
       profileUnsubscribe?.();
     };
   }, []);
@@ -97,11 +106,22 @@ export function SidebarDemo() {
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => {
-    const result = await signOutUser();
-    if (result.success) {
-      navigate("/");
-    } else {
-      alert(result.message);
+    try {
+      setLogoutLoading(true);
+      const result = await signOutUser();
+      if (result.success) {
+        setToast({ message: "Signed out successfully", type: "success" });
+        // small delay so user sees toast before redirect
+        setTimeout(() => navigate("/"), 400);
+      } else {
+        setToast({ message: result.message || "Logout failed", type: "error" });
+      }
+    } catch (err: any) {
+      setToast({ message: err?.message || "Logout failed", type: "error" });
+    } finally {
+      setLogoutLoading(false);
+      // auto-dismiss toast after 3s
+      setTimeout(() => setToast(null), 3000);
     }
   };
   return (
@@ -117,13 +137,28 @@ export function SidebarDemo() {
             {/* {open ? <Logo /> : <LogoIcon />} */}
             <Logo />
             <div className="mt-8 flex flex-col gap-2 mx-4 my-4">
-              {links.map((link, idx) => (
-                <SidebarLink
-                  key={idx}
-                  link={link}
-                  onLogout={link.label === "Logout" ? handleLogout : undefined}
-                />
-              ))}
+              {links.map((link, idx) => {
+                if (link.label === "Logout") {
+                  const logoutIcon = logoutLoading ? (
+                    <Spinner size="sm" className="text-[var(--text-primary)]" />
+                  ) : (
+                    link.icon
+                  );
+
+                  return (
+                    <SidebarLink
+                      key={idx}
+                      link={{ ...link, icon: logoutIcon }}
+                      onLogout={handleLogout}
+                      disabled={logoutLoading}
+                    />
+                  );
+                }
+
+                return (
+                  <SidebarLink key={idx} link={link} onLogout={undefined} />
+                );
+              })}
             </div>
           </div>
           <div className="flex items-center justify-between px-1 py-1 border-t border-[var(--border-color)]">
@@ -162,6 +197,18 @@ export function SidebarDemo() {
         </SidebarBody>
       </Sidebar>
       <Dashboard />
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed right-4 bottom-6 z-50">
+          <div
+            className={`px-4 py-2 rounded text-white shadow ${
+              toast.type === "success" ? "bg-green-600" : "bg-red-600"
+            }`}
+          >
+            {toast.message}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

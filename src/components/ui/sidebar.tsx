@@ -174,17 +174,23 @@ export const SidebarLink = ({
   link,
   className,
   onLogout,
+  disabled,
   ...props
 }: {
   link: Links;
   className?: string;
   onLogout?: () => Promise<void>;
+  disabled?: boolean;
 }) => {
   const { open, animate, setOpen } = useSidebar();
   const location = useLocation();
   const isActive = location.pathname === link.href;
 
   const handleClick = async (e: React.MouseEvent) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
     if (link.label === "Logout" && onLogout) {
       e.preventDefault();
       await onLogout();
@@ -197,6 +203,7 @@ export const SidebarLink = ({
     return (
       <button
         onClick={handleClick}
+        disabled={disabled}
         className={cn(
           "flex items-center justify-start gap-2 group/sidebar py-2 px-2 rounded-md w-full text-left",
           "hover:bg-[var(--accent-hover)]",

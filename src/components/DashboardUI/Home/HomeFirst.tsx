@@ -79,10 +79,12 @@ const Dashboard: React.FC = () => {
     <div className="flex-grow p-6 pt-4 md:p-8 overflow-y-auto bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <h1 className="text-3xl font-bold mb-2">
         Welcome,{" "}
-        {!isLoaded ? (
+        {userProfile?.name ? (
+          <span>{userProfile.name}</span>
+        ) : !isLoaded ? (
           <span className="h-8 w-24 inline-block bg-gray-700 rounded animate-pulse align-middle"></span>
         ) : (
-          <span>{userProfile?.name ?? "User"}</span>
+          <span>User</span>
         )}
       </h1>
       <p className="text-[var(--text-secondary)] mb-6 md:mb-8">

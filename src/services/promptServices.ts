@@ -1,6 +1,5 @@
 import axios from "axios";
 import type { Prompt, PromptUpdateData } from "../types"; // Import your types
-import { getAuth, getIdToken } from "firebase/auth";
 
 // Get the API URL from your .env.local file
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -8,15 +7,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 // --- Helper Function to get Auth Token ---
 // This reads the 'authToken' you saved in localStorage during login
 const getAuthHeaders = async () => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-
-  if (!user) {
-    throw new Error("No authenticated user. Please log in.");
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    throw new Error("No auth token found. Please log in.");
   }
 
-  // Force refresh if needed (optional: pass true to always get fresh token)
-  const token = await getIdToken(user, true); // ← This auto-refreshes if expired!
+  // ← This auto-refreshes if expired!
 
   return {
     headers: {

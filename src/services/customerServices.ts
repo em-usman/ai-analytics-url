@@ -1,22 +1,15 @@
 import axios from "axios";
 import type { Customer, NewCustomerData, UpdateCustomerData } from "../types";
-import { getAuth, getIdToken } from "firebase/auth";
 
 // Get API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 // Helper to get authorization headers
 const getAuthHeaders = async () => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-
-  if (!user) {
-    throw new Error("No authenticated user. Please log in.");
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    throw new Error("No auth token found. Please log in.");
   }
-
-  // Force refresh if needed (optional: pass true to always get fresh token)
-  const token = await getIdToken(user, true); // ← This auto-refreshes if expired!
-
   return {
     headers: {
       Authorization: `Bearer ${token}`,

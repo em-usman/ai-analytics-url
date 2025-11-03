@@ -8,9 +8,9 @@ import type {
   User as UserProfile,
 } from "../types"; // Import your types
 
-import { auth, db } from "../firebase/firebaseConfig";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+// import { auth, db } from "../firebase/firebaseConfig";
+// import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+// import { doc, onSnapshot } from "firebase/firestore";
 
 // Get the API URL from environment variables
 // Make sure to create a .env.local file with VITE_API_URL=http://localhost:5000
@@ -55,7 +55,7 @@ export const loginUser = async (data: LoginData): Promise<AuthResult> => {
     // --- THIS IS THE CRITICAL STEP ---
     // 1. Sign in the Firebase Client SDK first.
     // This tells `onAuthStateChanged` that the user is logged in.
-    await signInWithEmailAndPassword(auth, data.email, data.password);
+    // await signInWithEmailAndPassword(auth, data.email, data.password);
     // --- END CRITICAL STEP ---
 
     // 2. Call your backend (this is for your API token)
@@ -77,17 +77,6 @@ export const loginUser = async (data: LoginData): Promise<AuthResult> => {
     if (axios.isAxiosError(error) && error.response) {
       const errorData = error.response.data as AuthErrorResponse;
       message = errorData.error || "Login failed. Please try again.";
-    } else if (error && typeof error === "object" && "code" in error) {
-      const firebaseError = error as { code: string; message: string };
-      if (
-        firebaseError.code === "auth/user-not-found" ||
-        firebaseError.code === "auth/wrong-password" ||
-        firebaseError.code === "auth/invalid-credential"
-      ) {
-        message = "Invalid email or password.";
-      } else {
-        message = firebaseError.message;
-      }
     } else if (error instanceof Error) {
       message = error.message;
     }
@@ -98,45 +87,71 @@ export const loginUser = async (data: LoginData): Promise<AuthResult> => {
 
 export const listenToUserProfile = (
   uid: string,
-  onProfileUpdate: (profile: UserProfile | null) => void
+  onProfileUpdate: (profile: UserProfile | null) => void,
+  intervalMs = 5000
 ) => {
-  const userDocRef = doc(db, "users", uid);
+  if (!uid) {
+    onProfileUpdate(null);
+    return () => {};
+  }
 
-  console.log(`👀 Listening for user profile updates: ${uid}`);
+  let prevProfileJson: string | null = null;
+  let stopped = false;
 
-  const unsubscribe = onSnapshot(
-    userDocRef,
-    (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data() as UserProfile;
-        console.log("✅ User profile updated:", data);
-        onProfileUpdate(data);
-      } else {
-        console.warn("⚠️ No user document found for UID:", uid);
-        onProfileUpdate(null);
+  const token = localStorage.getItem("authToken");
+
+  const fetchProfile = async () => {
+    if (stopped) return;
+    try {
+      const resp = await axios.get<UserProfile>(`${API_URL}/users/${uid}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const profile = resp.data;
+      const json = JSON.stringify(profile);
+      if (json !== prevProfileJson) {
+        prevProfileJson = json;
+        onProfileUpdate(profile);
       }
-    },
-    (error) => {
-      console.error("❌ Error listening to user profile:", error);
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
       onProfileUpdate(null);
     }
-  );
+  };
 
-  return unsubscribe;
+  // initial fetch
+  fetchProfile();
+
+  const handle = setInterval(fetchProfile, intervalMs);
+
+  return () => {
+    stopped = true;
+    clearInterval(handle);
+  };
 };
-
 
 export const signOutUser = async () => {
   try {
-    // Sign the user out of Firebase Authentication
-    await signOut(auth);
+    const token = localStorage.getItem("authToken");
+    // Optionally notify backend to invalidate session/token
+    try {
+      await axios.post(
+        `${API_URL}/auth/logout`,
+        {},
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }
+      );
+    } catch (e) {
+      // ignore logout errors from backend, we will still clear client state
+      console.warn("Backend logout failed (ignored):", e);
+    }
 
-    // [Crucial Step] Clear the token and user data from local storage
+    // Clear local storage
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, message: error.message };
+    return { success: false, message: error?.message };
   }
 };

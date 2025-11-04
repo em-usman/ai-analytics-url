@@ -16,7 +16,7 @@ import {
 import { cn } from "../../lib/utils";
 import { Outlet, useLocation } from "react-router-dom";
 // import box from "../../assets/AH_logo.webp";
-import companyLogo from "../../assets/company_logo.png";
+import companyLogo from "../../assets/white-logo.png";
 // import HomeFirst from "./Home/HomeFirst";
 import HomeFirst from "./Home/HomeFirst";
 // import { signOutUser, fetchUserName } from "../../services/authServices";
@@ -163,7 +163,10 @@ export function SidebarDemo() {
               <SidebarLink
                 link={{
                   label: (
-                    <span className="max-w-[90px] truncate block" title={name || "User"}>
+                    <span
+                      className="max-w-[90px] truncate block"
+                      title={name || "User"}
+                    >
                       {name || "User"}
                     </span>
                   ),
@@ -208,10 +211,7 @@ export function SidebarDemo() {
 
 export const Logo = () => {
   return (
-    <a
-      href="#"
-      className="relative z-20 flex items-center py-4 px-4 text-sm font-normal text-[var(--text-primary)] border-b border-[var(--border-color)] w-full"
-    >
+    <div className="relative z-20 flex items-center py-4 px-4 w-full">
       {/* Responsive logo image */}
       <img
         src={companyLogo}
@@ -227,7 +227,7 @@ export const Logo = () => {
       >
         AI Strategy Compass
       </motion.span> */}
-    </a>
+    </div>
   );
 };
 // export const LogoIcon = () => {

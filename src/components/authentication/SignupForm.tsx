@@ -6,6 +6,7 @@ import { cn } from "../../lib/utils";
 import { useNavigate } from "react-router-dom";
 import GradientButton from "../ui/GradientButton"; // Assuming you have this
 import authImage from "../../assets/auth_pic/auth_pic.webp";
+import logo from "../../../public/logo.png";
 
 // Import the API service function
 import { registerUser } from "../../services/authServices";
@@ -117,7 +118,10 @@ export function SignupForm() {
       {/* Form Container */}
       <div className="w-full max-w-lg p-8 bg-white shadow-lg min-h-screen flex flex-col justify-center">
         <div className="text-center space-y-3 mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold">Get Started</h2>
+          <img
+            className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight"
+            src={logo}
+          />
           <p className="text-lg text-gray-600">
             Create your account and begin your journey
           </p>
@@ -137,7 +141,7 @@ export function SignupForm() {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="John Doe"
+              placeholder="Enter your name"
               type="text"
               required
             />
@@ -151,7 +155,7 @@ export function SignupForm() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="user@example.com"
+              placeholder="Enter your email"
               type="email"
               required
               className={emailError ? "border-red-500" : ""}

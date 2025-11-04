@@ -9,6 +9,7 @@ import type { LoginData } from "../../types";
 import { loginUser } from "../../services/authServices";
 import authImage from "../../assets/auth_pic/auth_pic.webp";
 import Spinner from "../ui/spinner";
+import logo from "../../../public/logo.png";
 
 export function SigninForm() {
   const navigate = useNavigate();
@@ -71,9 +72,11 @@ export function SigninForm() {
       <div className="w-full max-w-lg p-8 bg-white shadow-lg min-h-screen flex flex-col justify-center">
         <div className="text-center space-y-3 mb-8">
           <div className="relative">
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight">
-              Welcome Back
-            </h2>
+            <img
+              className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight"
+              src={logo}
+            />
+
             {/* Subtle underline accent */}
             <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full"></div>
           </div>
@@ -107,7 +110,7 @@ export function SigninForm() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="project@gmail.com"
+              placeholder="Enter your email"
               type="email"
               required
             />

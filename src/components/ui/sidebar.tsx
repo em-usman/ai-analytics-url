@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import { Link, useLocation } from "react-router-dom";
 // import { FaGem } from "react-icons/fa";
-import companyLogo from "../../assets/company_logo.png";
+import companyLogo from "../../assets/white-logo.png";
 
 interface Links {
   label: string | React.ReactNode;

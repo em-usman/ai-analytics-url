@@ -216,7 +216,7 @@ export const Logo = () => {
       <img
         src={companyLogo}
         alt="AI Strategy Compass"
-        className="h-8 w-auto object-contain"
+        className="h-7 w-auto object-contain"
         loading="lazy"
       />
       {/* Optional: Keep the brand name if desired, or remove it completely */}

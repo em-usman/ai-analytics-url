@@ -129,7 +129,7 @@ export const MobileSidebar = ({
               <img
                 src={companyLogo}
                 alt="AI Strategy Compass"
-                className="h-8 w-auto object-contain"
+                className="h-6 w-auto object-contain"
                 loading="lazy"
               />
             </div>

@@ -78,7 +78,7 @@ export function SigninForm() {
             />
 
             {/* Subtle underline accent */}
-            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full"></div>
+            {/* <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-gray-900 to-gray-800 rounded-full"></div> */}
           </div>
 
           <p className="text-base md:text-lg text-gray-600 font-medium max-w-sm mx-auto leading-relaxed">

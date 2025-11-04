@@ -4,10 +4,11 @@ import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import { Link, useLocation } from "react-router-dom";
-import { FaGem } from "react-icons/fa";
+// import { FaGem } from "react-icons/fa";
+import companyLogo from "../../assets/company_logo.png";
 
 interface Links {
-  label: string;
+  label: string | React.ReactNode;
   href: string;
   icon: React.JSX.Element | React.ReactNode;
 }
@@ -120,18 +121,18 @@ export const MobileSidebar = ({
         )}
         {...props}
       >
-        <div className="flex items-center justify-between w-full z-20 ">
+        <div className="flex items-center justify-between w-full z-20 gap-2">
           {/* Left side: Heading */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600">
-              {" "}
-              {/* Blue rounded-square background */}
-              <FaGem className="text-white w-5 h-5" />{" "}
-              {/* White diamond icon */}
+          <div className="flex items-center justify-between w-full z-20">
+            {/* Left side: Responsive logo */}
+            <div className="flex items-center">
+              <img
+                src={companyLogo}
+                alt="AI Strategy Compass"
+                className="h-8 w-auto object-contain"
+                loading="lazy"
+              />
             </div>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)] ">
-              AI Strategy Compass
-            </h1>
           </div>
           {/* Right side: Hamburger menu */}
           <IconMenu2

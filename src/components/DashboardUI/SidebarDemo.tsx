@@ -11,11 +11,12 @@ import {
   IconTemplate,
   IconSettings,
 } from "@tabler/icons-react";
-import { FaGem } from "react-icons/fa";
-import { motion } from "motion/react";
+// import { FaGem } from "react-icons/fa";
+// import { motion } from "motion/react";
 import { cn } from "../../lib/utils";
 import { Outlet, useLocation } from "react-router-dom";
-import box from "../../assets/AH_logo.webp";
+// import box from "../../assets/AH_logo.webp";
+import companyLogo from "../../assets/company_logo.png";
 // import HomeFirst from "./Home/HomeFirst";
 import HomeFirst from "./Home/HomeFirst";
 // import { signOutUser, fetchUserName } from "../../services/authServices";
@@ -161,7 +162,11 @@ export function SidebarDemo() {
             ) : (
               <SidebarLink
                 link={{
-                  label: name || "User",
+                  label: (
+                    <span className="max-w-[90px] truncate block" title={name || "User"}>
+                      {name || "User"}
+                    </span>
+                  ),
                   href: "#",
                   icon: (
                     <div className="flex items-center justify-center h-10 w-10 rounded-full bg-[var(--bg-secondary)] text-white text-lg font-medium">
@@ -200,43 +205,47 @@ export function SidebarDemo() {
     </div>
   );
 }
+
 export const Logo = () => {
   return (
     <a
       href="#"
-      className="relative z-20 flex items-center space-x-2 py-4 px-4 text-sm font-normal text-[var(--text-primary)] border-b border-[var(--border-color)] width-full"
+      className="relative z-20 flex items-center py-4 px-4 text-sm font-normal text-[var(--text-primary)] border-b border-[var(--border-color)] w-full"
     >
-      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600">
-        {" "}
-        {/* Blue rounded-square background */}
-        <FaGem className="text-white w-5 h-5" /> {/* White diamond icon */}
-      </div>
-      <motion.span
+      {/* Responsive logo image */}
+      <img
+        src={companyLogo}
+        alt="AI Strategy Compass"
+        className="h-8 w-auto object-contain"
+        loading="lazy"
+      />
+      {/* Optional: Keep the brand name if desired, or remove it completely */}
+      {/* <motion.span
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="font-bold text-lg md:text-lg whitespace-pre text-[var(--text-primary)]"
+        className="font-bold text-lg md:text-lg ml-2 whitespace-pre text-[var(--text-primary)]"
       >
         AI Strategy Compass
-      </motion.span>
+      </motion.span> */}
     </a>
   );
 };
-export const LogoIcon = () => {
-  return (
-    <a
-      href="#"
-      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-[var(--text-primary)]"
-    >
-      <img
-        src={box}
-        className="h-7 w-7 shrink-0 rounded-full"
-        width={50}
-        height={50}
-        alt="Avatar"
-      />
-    </a>
-  );
-};
+// export const LogoIcon = () => {
+//   return (
+//     <a
+//       href="#"
+//       className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-[var(--text-primary)]"
+//     >
+//       <img
+//         // src={}
+//         className="h-7 w-7 shrink-0 rounded-full"
+//         width={50}
+//         height={50}
+//         alt="Avatar"
+//       />
+//     </a>
+//   );
+// };
 
 // Dummy dashboard component with content
 const Dashboard = () => {
